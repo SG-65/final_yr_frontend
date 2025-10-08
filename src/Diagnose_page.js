@@ -7,10 +7,11 @@ export default function DiagnosePage() {
   const [image, setImage] = useState(null);
   const [detectionResult, setDetectionResult] = useState(null);
   const [predictionResult, setPredictionResult] = useState(null);
+  const [compatibleWeather, setCompatibleWeather] = useState(null);
   const { showActionSheetWithOptions } = useActionSheet();
 
 
-const baseURL = "https://8edbff1d3a8b.ngrok-free.app"; // Replace with your backend URL
+const baseURL = "https://fb74d7daea6c.ngrok-free.app"; // Replace with your backend URL
 
 
   // Function to handle image picking from gallery
@@ -165,34 +166,83 @@ const createFormData = (image) => {
 
   //prediction of image from backend(early or late blight)
   const imagePrediction = async () => {
-    if (!image) {
-      Alert.alert("No image selected");
-      return;
-    }
-    if(detectionResult.final_decision === "Not Potato"){
-      if(Platform.OS === 'web'){
-        alert("Not a potato leaf");
-        return;
-      }
-      Alert.alert("Not a potato leaf");
-      return;
-    }
-    try {
-      const formData = createFormData(image);
-      const responsePredict = await fetch(`${baseURL}/predict`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await responsePredict.json();
-      setPredictionResult(data);
-      console.log('Prediction Result:', data);
+  if (!image) {
+    Alert.alert("No image selected");
+    return;
+  }
 
-      
-    } catch (error) {
-      console.log('Error uploading image:', error);
-      Alert.alert("Upload Failed", "Something went wrong");
+  // ✅ Ensure detection has been done before prediction
+  if (!detectionResult) {
+    if (Platform.OS === 'web') {
+      alert("Please run detection first.");
+    } else {
+      Alert.alert("Please run detection first.");
     }
-  } 
+    return;
+  }
+
+  // ✅ Prevent non-potato leaves from proceeding
+  if (detectionResult.final_decision === "Not Potato") {
+    if (Platform.OS === 'web') {
+      alert("Not a potato leaf");
+    } else {
+      Alert.alert("Not a potato leaf");
+    }
+    return;
+  }
+
+  try {
+    console.log("🧠 Starting prediction...");
+
+    // Prepare image form data
+    const formData = createFormData(image);
+
+    // Fetch prediction from FastAPI
+    const responsePredict = await fetch(`${baseURL}/predict`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!responsePredict.ok) {
+      throw new Error(`Prediction request failed: ${responsePredict.status}`);
+    }
+
+    const data = await responsePredict.json();
+    console.log("✅ Prediction Result:", data);
+    setPredictionResult(data);
+
+    const leafClass = data.class;
+    console.log("🪴 Predicted leaf class:", leafClass);
+
+    if (!leafClass) {
+      console.log("⚠️ No leaf class found in prediction response.");
+      return;
+    }
+
+    // ✅ Fetch compatible weather data
+    const weatherURL = `${baseURL}/compatible_weather?leaf=${encodeURIComponent(leafClass)}`;
+    console.log("🌦 Fetching compatible weather from:", weatherURL);
+
+    const weatherResponse = await fetch(weatherURL);
+    if (!weatherResponse.ok) {
+      throw new Error(`Weather fetch failed: ${weatherResponse.status}`);
+    }
+
+    const weatherData = await weatherResponse.json();
+    console.log("✅ Compatible Weather Data:", weatherData);
+    setCompatibleWeather(weatherData);
+
+  } catch (error) {
+    console.error("❌ Error during prediction or weather fetch:", error);
+
+    if (Platform.OS === 'web') {
+      alert("Upload or fetch failed. Check console for details.");
+    } else {
+      Alert.alert("Upload Failed", "Something went wrong. Please try again.");
+    }
+  }
+};
+
 
 
 
@@ -245,6 +295,17 @@ const createFormData = (image) => {
             <Text>Confidence: {(predictionResult.confidence * 100).toFixed(2)}%</Text>
             <Text>Severity: {predictionResult.severity}</Text>
             <Text>Infected Ratio: {predictionResult.infected_ratio}</Text>
+          </View>
+        )}
+        {compatibleWeather && (
+          <View style={styles.resultBox}>
+            <Text style={styles.resultTitle}>Compatible Weather Conditions</Text>
+            <Text>Weather: {compatibleWeather.Weather}</Text>
+            <Text>Temperature: {compatibleWeather.Temperature}</Text>
+            <Text>Humidity: {compatibleWeather.Humidity}</Text>
+            <Text>Potato Suitability: {compatibleWeather["Potato Suitability"]}</Text>
+            <Text>Risk Level: {compatibleWeather["Risk Level"]}</Text>
+            <Text>Disease Analysis: {compatibleWeather["Disease Analysis"]}</Text>
           </View>
         )}
       </View>
