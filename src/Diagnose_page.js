@@ -2,6 +2,7 @@ import react, { useState, useEffect, useContext,} from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { TouchableOpacity, StyleSheet, Text, View, Alert, Image, Platform, ScrollView } from 'react-native';
 import { useActionSheet } from '@expo/react-native-action-sheet';
+import baseURL from './config'
 
 export default function DiagnosePage() {
   const [image, setImage] = useState(null);
@@ -11,7 +12,7 @@ export default function DiagnosePage() {
   const { showActionSheetWithOptions } = useActionSheet();
 
 
-const baseURL = "https://fb74d7daea6c.ngrok-free.app"; // Replace with your backend URL
+
 
 
   // Function to handle image picking from gallery

@@ -5,6 +5,7 @@ import Home from './src/Home'
 import Treatment from './src/Treatment'
 import Header from  './src/header'
 import Weather from "./src/weather";
+import Profile from "./src/profiles";
 import LoadingScreen from "./src/loading_page";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -42,6 +43,9 @@ export default function App() {
               else if (route.name === "Weather") {
                 iconName = focused ? "cloud" : "cloud-outline";
               }
+              else if (route.name === "Profile") {
+                iconName = focused ? "person" : "person-outline";
+              }
 
               // Return the icon component
               return <Ionicons name={iconName} size={size} color={color} />;
@@ -54,6 +58,7 @@ export default function App() {
           <Tab.Screen name="Diagnose" component={DiagnosePage} />
           <Tab.Screen name="Treatment" component={Treatment} />
           <Tab.Screen name="Weather" component={Weather} />
+          <Tab.Screen name="Profile" component={Profile} />
         </Tab.Navigator>
       </NavigationContainer>
     </ActionSheetProvider>

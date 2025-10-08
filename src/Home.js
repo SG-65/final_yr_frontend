@@ -33,6 +33,19 @@ export default function Home({ navigation }) {
             <Text style={styles.cardButtonText}>Go to Treatment</Text>
           </TouchableOpacity>
         </View>
+        
+        {/* Profile Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your Profile</Text>
+          <Text style={styles.cardSubtitle}>View and edit your information</Text>
+          <TouchableOpacity 
+            style={styles.cardButton} 
+            onPress={() => navigation.navigate("Profile")}
+          >
+            <Text style={styles.cardButtonText}>Go to Profile</Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
