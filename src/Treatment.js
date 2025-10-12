@@ -88,38 +88,47 @@ const leafData = [
    },
 ];
 
-export default function Treatment(){
+export default function Treatment() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-    <View style={styles.container}>
       <Text style={styles.title}>Treatment Suggestions</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={{ paddingHorizontal: 10 }}
+        snapToInterval={Dimensions.get("window").width * 0.82}
+        decelerationRate="fast"
+      >
         {leafData.map((leaf) => (
-      <View key={leaf.id} style={styles.card}>
-        <Image source={leaf.image} style={styles.leafImage} />
-        <Text style={styles.cardTitle}>{leaf.name}</Text>
+          <View key={leaf.id} style={styles.card}>
+            <Image source={leaf.image} style={styles.leafImage} />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{leaf.name}</Text>
+            </View>
 
-        <Text style={styles.label}>Description:</Text>
-        <Text style={styles.text}>{leaf.description}</Text>
+            <Text style={styles.label}>Description</Text>
+            <Text style={styles.text}>{leaf.description}</Text>
 
-        <Text style={styles.label}>Cause:</Text>
-        <Text style={styles.text}>{leaf.cause}</Text>
+            <Text style={styles.label}>Cause</Text>
+            <Text style={styles.text}>{leaf.cause}</Text>
 
-        <Text style={styles.label}>Treatment:</Text>
-        {typeof leaf.treatment === "string" ? (
-        <Text style={styles.text}>{leaf.treatment}</Text>
-        ) : (
-        <>
-            <Text style={{margin:4}}>Organic: {leaf.treatment.organic}</Text>
-            <Text style={{margin:4}}>Chemical: {leaf.treatment.chemical}</Text>
-        </>
-        )}
-    </View>
-   ))}
+            <Text style={styles.label}>Treatment</Text>
+            {typeof leaf.treatment === "string" ? (
+              <Text style={styles.text}>{leaf.treatment}</Text>
+            ) : (
+              <View style={{ marginVertical: 4 }}>
+                <Text style={styles.organic}>Organic: {leaf.treatment.organic}</Text>
+                <Text style={styles.chemical}>Chemical: {leaf.treatment.chemical}</Text>
+              </View>
+            )}
+          </View>
+        ))}
       </ScrollView>
-      {/* AI Chatbot Container */}
+
+      {/* Chatbot */}
       <View style={styles.chatbotContainer}>
-        <Text style={styles.chatbotTitle}>AI Plant Doctor</Text>
+        <Text style={styles.chatbotTitle}>🤖 AI Plant Doctor</Text>
         <Text style={styles.chatbotText}>
           Ask me anything about plant diseases, treatments, or prevention tips.
         </Text>
@@ -127,7 +136,6 @@ export default function Treatment(){
           <Text style={styles.placeholder}>Type your question here...</Text>
         </View>
       </View>
-    </View>
     </ScrollView>
   );
 }
@@ -137,62 +145,84 @@ const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: 16,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f5f9f7",
+    paddingTop: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#2e7d32",
-    marginLeft: 16,
+    marginHorizontal: 16,
     marginBottom: 12,
   },
   card: {
-    width: width * 0.8,
+    width: width * 0.82,
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    marginHorizontal: 10,
+    marginHorizontal: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+    position: "relative",
   },
   leafImage: {
     width: "100%",
-    height: 150,
-    borderRadius: 8,
+    height: 160,
+    borderRadius: 12,
     marginBottom: 12,
   },
-  cardTitle: {
-    fontSize: 18,
+  badge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: "#4caf50",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: "#fff",
     fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 8,
+    fontSize: 14,
   },
   label: {
     fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 6,
+    fontWeight: "600",
     color: "#555",
+    marginTop: 8,
   },
   text: {
     fontSize: 14,
     color: "#333",
+    marginTop: 2,
+    lineHeight: 20,
   },
-  // Chatbot styles
+  organic: {
+    fontSize: 14,
+    color: "#2e7d32",
+    marginTop: 2,
+    fontWeight: "600",
+  },
+  chemical: {
+    fontSize: 14,
+    color: "#c62828",
+    marginTop: 2,
+    fontWeight: "600",
+  },
   chatbotContainer: {
-    marginTop: 20,
+    marginTop: 24,
     marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     backgroundColor: "#e8f5e9",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   chatbotTitle: {
     fontSize: 18,
@@ -207,7 +237,7 @@ const styles = StyleSheet.create({
   },
   chatInput: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#ccc",
     backgroundColor: "#fff",

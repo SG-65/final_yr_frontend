@@ -11,7 +11,13 @@ import {
 import baseURL from "./config";
 
 export default function Profile() {
-  const [user, setUser] = useState({ name: "", email: "", bio: "" });
+  const [user, setUser] = useState({
+    id: "",
+    password: "",
+    name: "",
+    email: "",
+    bio: "",
+  });
   const [existingUsers, setExistingUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -32,8 +38,8 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
-    if (!user.name || !user.email) {
-      Alert.alert("Please enter name and email");
+    if (!user.id || !user.password || !user.name || !user.email) {
+      Alert.alert("Please enter ID, password, name, and email");
       return;
     }
 
@@ -47,7 +53,7 @@ export default function Profile() {
 
       if (response.ok) {
         Alert.alert("Profile added successfully!");
-        setUser({ name: "", email: "", bio: "" });
+        setUser({ id: "", password: "", name: "", email: "", bio: "" });
         setShowForm(false);
         fetchUsers();
       } else {
@@ -75,7 +81,21 @@ export default function Profile() {
 
       {/* Form */}
       {showForm && (
-        <View style={styles.formContainer}>
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Add New User</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="ID"
+            value={user.id}
+            onChangeText={(text) => setUser({ ...user, id: text })}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            secureTextEntry
+            value={user.password}
+            onChangeText={(text) => setUser({ ...user, password: text })}
+          />
           <TextInput
             style={styles.input}
             placeholder="Name"
@@ -107,18 +127,37 @@ export default function Profile() {
         </View>
       )}
 
-      {/* Existing Users */}
+      {/* Existing Users Table */}
       <Text style={styles.heading}>Existing Users</Text>
       {existingUsers && existingUsers.length > 0 ? (
-        existingUsers
-          .filter((u) => u.name || u.email || u.bio)
-          .map((u) => (
-            <View key={u._id} style={styles.userCard}>
-              <Text style={styles.userName}>{u.name}</Text>
-              <Text style={styles.userEmail}>{u.email}</Text>
-              <Text style={styles.userBio}>{u.bio}</Text>
+        <ScrollView horizontal={true} style={{ marginBottom: 30 }}>
+          <View style={styles.table}>
+            {/* Table Header */}
+            <View style={[styles.tableRow, styles.tableHeader]}>
+              <Text style={[styles.tableCell, styles.headerText, { width: 80, }]}>
+                ID
+              </Text>
+              <Text style={[styles.tableCell, styles.headerText, { width: 120,}]}>
+                Name
+              </Text>
+              <Text style={[styles.tableCell, styles.headerText, { width: 180 }]}>
+                Email
+              </Text>
+              <Text style={[styles.tableCell, styles.headerText, { width: 220,}]}>
+                Bio
+              </Text>
             </View>
-          ))
+            {/* Table Rows */}
+            {existingUsers.map((u) => (
+              <View key={u._id} style={styles.tableRow}>
+                <Text style={[styles.tableCell, { width: 80 }]}>{u.id}</Text>
+                <Text style={[styles.tableCell, { width: 120 }]}>{u.name}</Text>
+                <Text style={[styles.tableCell, { width: 180 }]}>{u.email}</Text>
+                <Text style={[styles.tableCell, { width: 220 }]}>{u.bio}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       ) : (
         <Text style={styles.noUsersText}>No users added yet.</Text>
       )}
@@ -130,32 +169,72 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: "#f0f4f7", // soft background
+    backgroundColor: "#f0f4f7",
   },
   addButton: {
-    backgroundColor: "#4CAF50",
-    padding: 14,
-    borderRadius: 30,
-    alignItems: "center",
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  formContainer: {
+  backgroundColor: "#1976D2", // deep blue
+  paddingVertical: 16,
+  paddingHorizontal: 25,
+  borderRadius: 30,
+  alignItems: "center",
+  marginBottom: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 5,
+  elevation: 4,
+},
+addButtonText: {
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: "700",
+  letterSpacing: 0.5,
+},
+
+button: {
+  backgroundColor: "#1976D2",
+  paddingVertical: 16,
+  paddingHorizontal: 25,
+  borderRadius: 25,
+  alignItems: "center",
+  marginTop: 10,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+buttonDisabled: {
+  backgroundColor: "#90caf9",
+},
+buttonText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "700",
+  letterSpacing: 0.3,
+},
+
+  formCard: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 20,
     marginBottom: 20,
-    paddingHorizontal: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#333",
+    textAlign: "center",
   },
   input: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 14,
     marginBottom: 12,
@@ -173,51 +252,65 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     color: "#333",
   },
-  userCard: {
-    padding: 12,
-    marginVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#2e7d32",
-  },
-  userEmail: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 2,
-  },
-  userBio: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-  button: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 14,
-    borderRadius: 25,
-    alignItems: "center",
-    marginTop: 5,
-  },
-  buttonDisabled: {
-    backgroundColor: "#a5d6a7",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  noUsersText: {
-    textAlign: "center",
-    marginTop: 20,
-    color: "#888",
-    fontSize: 16,
-  },
+  table: {
+  borderRadius: 12,
+  overflow: "hidden",
+  borderWidth: 1,
+  borderColor: "#e0e0e0",
+  backgroundColor: "#fff",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  elevation: 2,
+},
+tableRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  minHeight: 50,
+  borderBottomWidth: 1,
+  borderBottomColor: "#e0e0e0",
+},
+tableHeader: {
+  backgroundColor: "#1E88E5",
+},
+tableCell: {
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  fontSize: 14,
+  color: "#333",
+},
+  heading: {
+  fontSize: 24,
+  fontWeight: "700",
+  marginVertical: 15,
+  color: "#1E88E5",
+},
+formTitle: {
+  fontSize: 20,
+  fontWeight: "700",
+  marginBottom: 20,
+  color: "#333",
+  textAlign: "center",
+},
+tableCell: {
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  fontSize: 15,
+  color: "#555", // slightly muted text
+},
+headerText: {
+  color: "#fff",
+  fontWeight: "700",
+  fontSize: 15,
+  textAlign: "center",
+},
+noUsersText: {
+  textAlign: "center",
+  marginTop: 20,
+  color: "#888",
+  fontSize: 16,
+},
 });
+
+
