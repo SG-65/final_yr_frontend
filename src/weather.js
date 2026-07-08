@@ -1,711 +1,3 @@
-// import React, { useEffect, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   ScrollView,
-//   StyleSheet,
-//   ActivityIndicator,
-//   Platform,
-//   Alert,
-//   TouchableOpacity,
-// } from "react-native";
-// import * as Location from "expo-location";
-// import baseURL from "./config";
-
-// export default function Weather() {
-//   const [weather, setWeather] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [translatedWeather, setTranslatedWeather] = useState(null);
-//   const [targetLanguage, setTargetLanguage] = useState("hindi"); // default language
-
-//   // ✅ Translation function
-//   const translateText = async (text, targetLang) => {
-//     if (!text) return "";
-//     try {
-//       const response = await fetch(
-//         `${baseURL}/translate?text=${encodeURIComponent(text)}&target_language=${targetLang}`
-//       );
-//       if (!response.ok) throw new Error("Translation failed");
-//       const data = await response.json();
-//       return data.translated_text;
-//     } catch (error) {
-//       console.error("Translation error:", error);
-//       return text; // fallback to original text
-//     }
-//   };
-
-//   // ✅ Fetch Weather — Re-runs whenever targetLanguage changes
-//   useEffect(() => {
-//     const fetchWeather = async () => {
-//       setLoading(true); // 🟢 reload indicator every time
-//       try {
-//         let response;
-
-//         if (Platform.OS === "android") {
-//           const { status } = await Location.requestForegroundPermissionsAsync();
-//           if (status !== "granted") {
-//             Alert.alert(
-//               "Permission Denied",
-//               "Location permission is required to fetch weather data."
-//             );
-//             setLoading(false);
-//             return;
-//           }
-
-//           const location = await Location.getCurrentPositionAsync({});
-//           const { latitude, longitude } = location.coords;
-//           console.log("📍 Android Coordinates:", latitude, longitude);
-
-//           response = await fetch(`${baseURL}/weather`);
-//         } else {
-//           console.log("🌐 Using IP-based location for Web/Windows...");
-//           response = await fetch(`${baseURL}/weather`, {
-//             method: "GET",
-//             headers: { "Content-Type": "application/json" },
-//           });
-//         }
-
-//         const text = await response.text();
-//         console.log("🌐 Raw server response:", text);
-
-//         try {
-//           const data = JSON.parse(text);
-//           console.log("✅ Weather data received:", data);
-//           setWeather(data);
-
-//           // ✅ Translate right after fetching
-//           const translated = {};
-//           for (let key in data) {
-//             if (!["City", "Timestamp"].includes(key)) {
-//               translated[key] = await translateText(data[key].toString(), targetLanguage);
-//             }
-//           }
-//           setTranslatedWeather(translated);
-//         } catch (err) {
-//           console.error("❌ Response not JSON:", err);
-//           console.log("📄 Received content:", text);
-//           if (Platform.OS === "web") {
-//             alert("Server did not return valid JSON. Check console logs for details.");
-//           }
-//         }
-//       } catch (error) {
-//         console.error("🌐 Error fetching weather:", error);
-//         if (Platform.OS === "web") {
-//           alert("Unable to fetch weather data (CORS or network issue). Check console for details.");
-//         } else {
-//           Alert.alert("Error", "Unable to fetch weather data. Please try again later.");
-//         }
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchWeather(); // 🟢 Trigger whenever language changes
-//   }, [targetLanguage]); // 🟢 refetch + translate when language changes
-
-//   // ✅ Optional debug: get IP info
-//   useEffect(() => {
-//     fetch(`${baseURL}/get_ip_location`)
-//       .then((res) => res.json())
-//       .then((data) => console.log("🌍 Device IP:", data.client_ip))
-//       .catch((err) => console.error("Error getting IP:", err));
-//   }, []);
-
-//   // ✅ Loading UI
-//   if (loading) {
-//     return (
-//       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#4CAF50" />
-//         <Text style={styles.loadingText}>Fetching & Translating weather data...</Text>
-//       </View>
-//     );
-//   }
-
-//   // ✅ No weather data UI
-//   if (!weather) {
-//     return (
-//       <View style={styles.container}>
-//         <Text style={styles.noDataText}>No weather data available.</Text>
-//       </View>
-//     );
-//   }
-
-//   // ✅ Main weather UI
-//   return (
-// <View style={styles.container}>
-//   <Text style={styles.title}>🌤️ Weather Dashboard</Text>
-
-//   {/* Language Selector */}
-//   <View style={styles.languageSelectorContainer}>
-//     <Text style={styles.languageLabel}>Select Language:</Text>
-//     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-//       {[
-//         "bengali","bhojpuri","gujarati","hindi","kannada","maithili",
-//         "malayalam","marathi","meitei","odia","punjabi","sanskrit",
-//         "tamil","telugu","urdu","santali","awadhi","bodo","khasi",
-//         "kokborok","marwadi","tulu",
-//       ].map((lang) => (
-//         <TouchableOpacity
-//           key={lang}
-//           style={[
-//             styles.languageButton,
-//             targetLanguage === lang && styles.languageButtonSelected
-//           ]}
-//           onPress={() => setTargetLanguage(lang)}
-//         >
-//           <Text style={styles.languageButtonText}>{lang.toUpperCase()}</Text>
-//         </TouchableOpacity>
-//       ))}
-//     </ScrollView>
-//   </View>
-
-//   <ScrollView style={styles.scroll}>
-//     {/* Weather Card */}
-//     <View style={styles.weatherCard}>
-//       <Text style={styles.cardTitle}>🌡️ Original Weather</Text>
-//       {Object.entries(weather)
-//         .filter(([key]) => !["City", "Timestamp"].includes(key))
-//         .map(([key, value]) => (
-//           <View key={key} style={styles.fieldCard}>
-//             <Text style={styles.label}>{key}</Text>
-//             <Text style={styles.value}>{value}</Text>
-//           </View>
-//       ))}
-//     </View>
-
-//     {translatedWeather && (
-//       <View style={[styles.weatherCard, styles.translatedCard]}>
-//         <Text style={styles.cardTitle}>🌐 Translated Weather ({targetLanguage.toUpperCase()})</Text>
-//         {Object.entries(translatedWeather).map(([key, value]) => (
-//           <View key={key} style={styles.fieldCard}>
-//             <Text style={styles.label}>{key}</Text>
-//             <Text style={styles.value}>{value}</Text>
-//           </View>
-//         ))}
-//       </View>
-//     )}
-//   </ScrollView>
-// </View>
-//   );
-// }
-
-// // 🌿 Styles
-// const styles = StyleSheet.create({
-// container: {
-//   flex: 1,
-//   backgroundColor: "#eafaf1", // soft gradient feel
-//   padding: 16,
-// },
-// title: {
-//   fontSize: 28,
-//   fontWeight: "bold",
-//   color: "#2e7d32",
-//   textAlign: "center",
-//   marginBottom: 20,
-// },
-// languageSelectorContainer: {
-//   marginBottom: 16,
-// },
-// languageLabel: {
-//   fontSize: 16,
-//   fontWeight: "600",
-//   color: "#388e3c",
-//   marginBottom: 6,
-// },
-// languageButton: {
-//   paddingVertical: 8,
-//   paddingHorizontal: 16,
-//   marginRight: 8,
-//   borderRadius: 25,
-//   backgroundColor: "#c8e6c9",
-//   transition: "all 0.2s",
-// },
-// languageButtonSelected: {
-//   backgroundColor: "#388e3c",
-// },
-// languageButtonText: {
-//   color: "#fff",
-//   fontWeight: "700",
-//   fontSize: 14,
-// },
-// scroll: {
-//   marginTop: 10,
-// },
-// weatherCard: {
-//   backgroundColor: "#ffffff",
-//   borderRadius: 20,
-//   padding: 20,
-//   marginBottom: 18,
-//   shadowColor: "#000",
-//   shadowOffset: { width: 0, height: 6 },
-//   shadowOpacity: 0.12,
-//   shadowRadius: 12,
-//   elevation: 6,
-// },
-// translatedCard: {
-//   backgroundColor: "#e3f2fd",
-// },
-// cardTitle: {
-//   fontSize: 20,
-//   fontWeight: "bold",
-//   color: "#2E7D32",
-//   textAlign: "center",
-//   marginBottom: 16,
-// },
-// fieldCard: {
-//   flexDirection: "row",
-//   justifyContent: "space-between",
-//   alignItems: "center",
-//   backgroundColor: "#f0fff4",
-//   padding: 12,
-//   borderRadius: 14,
-//   marginBottom: 10,
-//   shadowColor: "#000",
-//   shadowOpacity: 0.05,
-//   shadowOffset: { width: 0, height: 2 },
-//   shadowRadius: 4,
-//   elevation: 2,
-// },
-// label: {
-//   fontSize: 16,
-//   fontWeight: "600",
-//   color: "#388E3C",
-// },
-// value: {
-//   fontSize: 16,
-//   fontWeight: "500",
-//   color: "#333",
-// },
-// loadingContainer: {
-//   flex: 1,
-//   justifyContent: "center",
-//   alignItems: "center",
-//   backgroundColor: "#eafaf1",
-// },
-// loadingText: {
-//   fontSize: 16,
-//   fontWeight: "600",
-//   color: "#388E3C",
-//   marginTop: 10,
-// },
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useEffect, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   ScrollView,
-//   StyleSheet,
-//   ActivityIndicator,
-//   Platform,
-//   Alert,
-//   TouchableOpacity,
-// } from "react-native";
-// import * as Location from "expo-location";
-// import baseURL from "./config";
-
-// export default function Weather() {
-//   const [weather, setWeather] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [translatedWeather, setTranslatedWeather] = useState(null);
-//   const [targetLanguage, setTargetLanguage] = useState("hindi"); // default language
-//   const [location, setLocation] = useState(null);
-
-//   // ✅ Translation function
-//   const translateText = async (text, targetLang) => {
-//     if (!text) return "";
-//     try {
-//       const response = await fetch(
-//         `${baseURL}/translate?text=${encodeURIComponent(text)}&target_language=${targetLang}`
-//       );
-//       if (!response.ok) throw new Error("Translation failed");
-//       const data = await response.json();
-//       return data.translated_text;
-//     } catch (error) {
-//       console.error("Translation error:", error);
-//       return text; // fallback to original text
-//     }
-//   };
-
-//   // ✅ Get device location
-//   const getDeviceLocation = async () => {
-//     try {
-//       const { status } = await Location.requestForegroundPermissionsAsync();
-//       if (status !== "granted") {
-//         Alert.alert(
-//           "Permission Denied",
-//           "Location permission is required to fetch weather data."
-//         );
-//         return null;
-//       }
-
-//       const location = await Location.getCurrentPositionAsync({
-//         accuracy: Location.Accuracy.High,
-//       });
-      
-//       console.log("📍 Device Coordinates:", location.coords.latitude, location.coords.longitude);
-//       return location.coords;
-//     } catch (error) {
-//       console.error("Error getting location:", error);
-//       Alert.alert("Error", "Unable to get your location. Using approximate location instead.");
-//       return null;
-//     }
-//   };
-
-//   // ✅ Fetch Weather with location
-//   useEffect(() => {
-//     const fetchWeather = async () => {
-//       setLoading(true);
-//       try {
-//         // Get device location first
-//         const coords = await getDeviceLocation();
-        
-//         let url = `${baseURL}/weather`;
-        
-//         // If we have coordinates, add them as query parameters
-//         if (coords) {
-//           url += `?lat=${coords.latitude}&lon=${coords.longitude}`;
-//         }
-        
-//         console.log("🌐 Fetching from:", url);
-        
-//         const response = await fetch(url, {
-//           method: "GET",
-//           headers: { "Content-Type": "application/json" },
-//         });
-
-//         const text = await response.text();
-//         console.log("🌐 Raw server response:", text);
-
-//         try {
-//           const data = JSON.parse(text);
-//           console.log("✅ Weather data received:", data);
-//           setWeather(data);
-//           setLocation(coords);
-
-//           // ✅ Translate right after fetching
-//           const translated = {};
-//           for (let key in data) {
-//             if (!["City", "Timestamp"].includes(key)) {
-//               translated[key] = await translateText(data[key].toString(), targetLanguage);
-//             }
-//           }
-//           setTranslatedWeather(translated);
-//         } catch (err) {
-//           console.error("❌ Response not JSON:", err);
-//           console.log("📄 Received content:", text);
-//           Alert.alert("Error", "Server returned invalid data. Please try again.");
-//         }
-//       } catch (error) {
-//         console.error("🌐 Error fetching weather:", error);
-//         Alert.alert("Error", "Unable to fetch weather data. Please try again later.");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchWeather();
-//   }, [targetLanguage]);
-
-//   // ✅ Optional debug: get IP info
-//   useEffect(() => {
-//     fetch(`${baseURL}/get_ip_location`)
-//       .then((res) => res.json())
-//       .then((data) => console.log("🌍 Device IP:", data.client_ip))
-//       .catch((err) => console.error("Error getting IP:", err));
-//   }, []);
-
-//   // ✅ Loading UI
-//   if (loading) {
-//     return (
-//       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#4CAF50" />
-//         <Text style={styles.loadingText}>Getting your location & fetching weather...</Text>
-//       </View>
-//     );
-//   }
-
-//   // ✅ No weather data UI
-//   if (!weather) {
-//     return (
-//       <View style={styles.container}>
-//         <Text style={styles.noDataText}>No weather data available.</Text>
-//       </View>
-//     );
-//   }
-
-//   // ✅ Main weather UI
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>🌤️ Weather Dashboard</Text>
-      
-//       {/* Location indicator */}
-//       {location && (
-//         <View style={styles.locationIndicator}>
-//           <Text style={styles.locationText}>
-//             📍 Using precise GPS location
-//           </Text>
-//         </View>
-//       )}
-
-//       {/* Language Selector */}
-//       <View style={styles.languageSelectorContainer}>
-//         <Text style={styles.languageLabel}>Select Language:</Text>
-//         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-//           {[
-//             "bengali","bhojpuri","gujarati","hindi","kannada","maithili",
-//             "malayalam","marathi","meitei","odia","punjabi","sanskrit",
-//             "tamil","telugu","urdu","santali","awadhi","bodo","khasi",
-//             "kokborok","marwadi","tulu",
-//           ].map((lang) => (
-//             <TouchableOpacity
-//               key={lang}
-//               style={[
-//                 styles.languageButton,
-//                 targetLanguage === lang && styles.languageButtonSelected
-//               ]}
-//               onPress={() => setTargetLanguage(lang)}
-//             >
-//               <Text style={[
-//                 styles.languageButtonText,
-//                 targetLanguage === lang && styles.languageButtonTextSelected
-//               ]}>
-//                 {lang.toUpperCase()}
-//               </Text>
-//             </TouchableOpacity>
-//           ))}
-//         </ScrollView>
-//       </View>
-
-//       <ScrollView style={styles.scroll}>
-//         {/* Weather Card */}
-//         <View style={styles.weatherCard}>
-//           <Text style={styles.cardTitle}>🌡️ Original Weather</Text>
-//           {Object.entries(weather)
-//             .filter(([key]) => !["City", "Timestamp"].includes(key))
-//             .map(([key, value]) => (
-//               <View key={key} style={styles.fieldCard}>
-//                 <Text style={styles.label}>{key}</Text>
-//                 <Text style={styles.value}>{value}</Text>
-//               </View>
-//           ))}
-//         </View>
-
-//         {translatedWeather && (
-//           <View style={[styles.weatherCard, styles.translatedCard]}>
-//             <Text style={styles.cardTitle}>🌐 Translated Weather ({targetLanguage.toUpperCase()})</Text>
-//             {Object.entries(translatedWeather).map(([key, value]) => (
-//               <View key={key} style={styles.fieldCard}>
-//                 <Text style={styles.label}>{key}</Text>
-//                 <Text style={styles.value}>{value}</Text>
-//               </View>
-//             ))}
-//           </View>
-//         )}
-//       </ScrollView>
-//     </View>
-//   );
-// }
-
-// // 🌿 Styles
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: "#eafaf1",
-//     padding: 16,
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: "bold",
-//     color: "#2e7d32",
-//     textAlign: "center",
-//     marginBottom: 10,
-//   },
-//   locationIndicator: {
-//     backgroundColor: "#4CAF50",
-//     padding: 8,
-//     borderRadius: 20,
-//     marginBottom: 16,
-//     alignSelf: "center",
-//   },
-//   locationText: {
-//     color: "#fff",
-//     fontSize: 14,
-//     fontWeight: "600",
-//   },
-//   languageSelectorContainer: {
-//     marginBottom: 16,
-//   },
-//   languageLabel: {
-//     fontSize: 16,
-//     fontWeight: "600",
-//     color: "#388e3c",
-//     marginBottom: 6,
-//   },
-//   languageButton: {
-//     paddingVertical: 8,
-//     paddingHorizontal: 16,
-//     marginRight: 8,
-//     borderRadius: 25,
-//     backgroundColor: "#c8e6c9",
-//   },
-//   languageButtonSelected: {
-//     backgroundColor: "#388e3c",
-//   },
-//   languageButtonText: {
-//     color: "#2e7d32",
-//     fontWeight: "700",
-//     fontSize: 14,
-//   },
-//   languageButtonTextSelected: {
-//     color: "#fff",
-//   },
-//   scroll: {
-//     marginTop: 10,
-//   },
-//   weatherCard: {
-//     backgroundColor: "#ffffff",
-//     borderRadius: 20,
-//     padding: 20,
-//     marginBottom: 18,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 6 },
-//     shadowOpacity: 0.12,
-//     shadowRadius: 12,
-//     elevation: 6,
-//   },
-//   translatedCard: {
-//     backgroundColor: "#e3f2fd",
-//   },
-//   cardTitle: {
-//     fontSize: 20,
-//     fontWeight: "bold",
-//     color: "#2E7D32",
-//     textAlign: "center",
-//     marginBottom: 16,
-//   },
-//   fieldCard: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     backgroundColor: "#f0fff4",
-//     padding: 12,
-//     borderRadius: 14,
-//     marginBottom: 10,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.05,
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowRadius: 4,
-//     elevation: 2,
-//   },
-//   label: {
-//     fontSize: 16,
-//     fontWeight: "600",
-//     color: "#388E3C",
-//   },
-//   value: {
-//     fontSize: 16,
-//     fontWeight: "500",
-//     color: "#333",
-//   },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "#eafaf1",
-//   },
-//   loadingText: {
-//     fontSize: 16,
-//     fontWeight: "600",
-//     color: "#388E3C",
-//     marginTop: 10,
-//   },
-//   noDataText: {
-//     fontSize: 18,
-//     color: "#666",
-//     textAlign: "center",
-//     marginTop: 50,
-//   },
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -715,19 +7,29 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  Modal,
+  RefreshControl,
+  Dimensions
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import baseURL from "./config";
+
+const { width } = Dimensions.get("window");
 
 export default function Weather() {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [translatedWeather, setTranslatedWeather] = useState(null);
   const [targetLanguage, setTargetLanguage] = useState("hindi");
   const [locationSource, setLocationSource] = useState(null);
-  const [compatibleData, setCompatibleData] = useState(null); // For /compatible endpoint
-  const [selectedLeaf, setSelectedLeaf] = useState("healthy"); // For disease analysis
-  const [viewMode, setViewMode] = useState("weather"); // "weather" or "compatible"
+  const [compatibleData, setCompatibleData] = useState(null);
+  const [selectedLeaf, setSelectedLeaf] = useState("healthy");
+  const [viewMode, setViewMode] = useState("weather");
+  const [riskModalVisible, setRiskModalVisible] = useState(false);
+  const [riskLevel, setRiskLevel] = useState("");
 
   // ✅ Translation function
   const translateText = async (text, targetLang) => {
@@ -749,7 +51,17 @@ export default function Weather() {
   const translateWeatherData = async (data, targetLang) => {
     const translated = {};
     for (let key in data) {
-      if (typeof data[key] === 'string' || typeof data[key] === 'number') {
+      if (typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key])) {
+        translated[key] = {};
+        for (let subKey in data[key]) {
+          const value = data[key][subKey];
+          if (typeof value === 'string' || typeof value === 'number') {
+            translated[key][subKey] = await translateText(value.toString(), targetLang);
+          } else {
+            translated[key][subKey] = value;
+          }
+        }
+      } else if (typeof data[key] === 'string' || typeof data[key] === 'number') {
         translated[key] = await translateText(data[key].toString(), targetLang);
       } else {
         translated[key] = data[key];
@@ -758,7 +70,7 @@ export default function Weather() {
     return translated;
   };
 
-  // ✅ Get device location (GPS)
+  // ✅ Get device location
   const getDeviceLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -769,12 +81,9 @@ export default function Weather() {
         );
         return null;
       }
-
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-      
-      console.log("📍 Device GPS Coordinates:", location.coords.latitude, location.coords.longitude);
       return location.coords;
     } catch (error) {
       console.error("Error getting GPS location:", error);
@@ -782,508 +91,857 @@ export default function Weather() {
     }
   };
 
-  // ✅ Fetch Current Weather (using /weather/current)
+  // ✅ Fetch Current Weather
   const fetchCurrentWeather = async () => {
     try {
-      console.log("🌐 Fetching current weather from:", `${baseURL}/weather/current`);
-      
       const response = await fetch(`${baseURL}/weather/current`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-      console.log("✅ Weather data received:", data);
-      
       setWeather(data);
-      setLocationSource("gps/ip"); // Backend auto-detects
-      
-      // Translate the data
+      setLocationSource("gps/ip");
       const translated = await translateWeatherData(data, targetLanguage);
       setTranslatedWeather(translated);
-      
     } catch (error) {
       console.error("❌ Error fetching weather:", error);
       Alert.alert("Error", "Unable to fetch weather data. Please try again later.");
     }
   };
 
-  // ✅ Fetch Compatible Weather (for potato disease analysis)
+  // ✅ Fetch Compatible Weather
   const fetchCompatibleWeather = async (leafType) => {
     try {
-      console.log("🌐 Fetching compatible weather from:", `${baseURL}/weather/compatible?leaf=${leafType}`);
-      
       const response = await fetch(`${baseURL}/weather/compatible?leaf=${leafType}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-      console.log("✅ Compatible weather data received:", data);
-      
       setCompatibleData(data);
-      
-      // Translate the data
+      if (data.risk_level) {
+        setRiskLevel(data.risk_level);
+        setRiskModalVisible(true);
+      }
       const translated = await translateWeatherData(data, targetLanguage);
       setTranslatedWeather(translated);
-      
     } catch (error) {
       console.error("❌ Error fetching compatible weather:", error);
       Alert.alert("Error", "Unable to fetch disease analysis data. Please try again later.");
     }
   };
 
-  // ✅ Main data fetch based on view mode
+  // ✅ Fetch Threat Prediction
+  const fetchThreatPrediction = async () => {
+    try {
+      const response = await fetch(`${baseURL}/weather/threat`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.Risk_Level) {
+        setRiskLevel(data.Risk_Level);
+        setRiskModalVisible(true);
+      }
+      return data;
+    } catch (error) {
+      console.error("❌ Error fetching threat prediction:", error);
+      Alert.alert("Error", "Unable to fetch threat prediction. Please try again later.");
+      return null;
+    }
+  };
+
+  // ✅ Main data fetch
   const fetchData = async () => {
     setLoading(true);
     try {
       if (viewMode === "weather") {
         await fetchCurrentWeather();
-      } else {
+      } else if (viewMode === "compatible") {
         await fetchCompatibleWeather(selectedLeaf);
+      } else if (viewMode === "threat") {
+        await fetchThreatPrediction();
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  // ✅ Refresh data when view mode, leaf type, or language changes
+  // ✅ Refresh
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
+
   useEffect(() => {
     fetchData();
   }, [viewMode, selectedLeaf]);
 
-  // ✅ Re-translate when language changes
   useEffect(() => {
     const reTranslate = async () => {
       if (viewMode === "weather" && weather) {
         const translated = await translateWeatherData(weather, targetLanguage);
         setTranslatedWeather(translated);
-      } else if (viewMode === "compatible" && compatibleData) {
+      } else if ((viewMode === "compatible" || viewMode === "threat") && compatibleData) {
         const translated = await translateWeatherData(compatibleData, targetLanguage);
         setTranslatedWeather(translated);
       }
     };
-    
     if (weather || compatibleData) {
       reTranslate();
     }
   }, [targetLanguage]);
 
-  // ✅ Loading UI
+  const getRiskColor = (risk) => {
+    switch(risk) {
+      case 'Critical': return '#d32f2f';
+      case 'High': return '#f44336';
+      case 'Moderate': return '#FF9800';
+      case 'Low': return '#4CAF50';
+      case 'Very Low': return '#2E7D32';
+      default: return '#666';
+    }
+  };
+
+  const getRiskEmoji = (risk) => {
+    switch(risk) {
+      case 'Critical': return '🔴';
+      case 'High': return '🟠';
+      case 'Moderate': return '🟡';
+      case 'Low': return '🟢';
+      case 'Very Low': return '✅';
+      default: return '⚪';
+    }
+  };
+
+  const getRiskDescription = (risk) => {
+    switch(risk) {
+      case 'Critical': return '🚨 Immediate action required! Disease outbreak highly likely.';
+      case 'High': return '⚠️ High risk conditions. Monitor closely and consider preventive measures.';
+      case 'Moderate': return '⚡ Moderate risk. Regular monitoring recommended.';
+      case 'Low': return '✅ Low risk. Standard care is sufficient.';
+      case 'Very Low': return '🌟 Optimal conditions. Minimal disease threat.';
+      default: return 'Risk level not available.';
+    }
+  };
+
+  const getWeatherIcon = (condition) => {
+    const cond = condition?.toLowerCase() || '';
+    if (cond.includes('rain') || cond.includes('shower')) return 'rainy';
+    if (cond.includes('cloud')) return 'cloudy';
+    if (cond.includes('sun') || cond.includes('clear')) return 'sunny';
+    if (cond.includes('snow')) return 'snow';
+    if (cond.includes('fog') || cond.includes('mist')) return 'cloudy-night';
+    return 'partly-sunny';
+  };
+
+  const renderNestedData = (obj, indent = 0) => {
+    if (!obj || typeof obj !== 'object') return null;
+    const entries = Object.entries(obj);
+    return entries.map(([key, value]) => {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        return (
+          <View key={key} style={[styles.nestedContainer, { marginLeft: indent * 10 }]}>
+            <Text style={styles.nestedLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}:</Text>
+            {renderNestedData(value, indent + 1)}
+          </View>
+        );
+      }
+      return (
+        <View key={key} style={[styles.fieldCard, { marginLeft: indent * 10 }]}>
+          <Text style={styles.fieldLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
+          <Text style={styles.fieldValue}>{String(value)}</Text>
+        </View>
+      );
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color="#6C63FF" />
         <Text style={styles.loadingText}>Loading weather data...</Text>
       </View>
     );
   }
 
-  // ✅ No data UI
   if (!weather && !compatibleData) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.noDataText}>No weather data available.</Text>
+      <View style={styles.emptyContainer}>
+        <Ionicons name="cloud-offline-outline" size={64} color="#ccc" />
+        <Text style={styles.emptyTitle}>No Weather Data</Text>
+        <Text style={styles.emptyText}>Unable to fetch weather information.</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <LinearGradient
+            colors={['#6C63FF', '#5A52D5']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.retryGradient}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // ✅ Get current display data
   const currentData = viewMode === "weather" ? weather : compatibleData;
 
-  // ✅ Main weather UI
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🌤️ Potato Weather Assistant</Text>
-      
-      {/* View Mode Selector */}
+      {/* Risk Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={riskModalVisible}
+        onRequestClose={() => setRiskModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { borderColor: getRiskColor(riskLevel), borderWidth: 3 }]}>
+            <Text style={styles.modalEmoji}>{getRiskEmoji(riskLevel)}</Text>
+            <Text style={[styles.modalTitle, { color: getRiskColor(riskLevel) }]}>
+              {riskLevel} Risk Level
+            </Text>
+            <View style={styles.modalDivider} />
+            <Text style={styles.modalDescription}>
+              {getRiskDescription(riskLevel)}
+            </Text>
+            <View style={styles.riskIndicators}>
+              {['Critical', 'High', 'Moderate', 'Low', 'Very Low'].map((level) => (
+                <View key={level} style={[
+                  styles.riskIndicator,
+                  getRiskIndicatorStyle(level),
+                  riskLevel === level && styles.riskActive
+                ]}>
+                  <Text style={styles.riskIndicatorText}>{level}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: getRiskColor(riskLevel) }]}
+              onPress={() => setRiskModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Header */}
+      <LinearGradient
+        colors={['#6C63FF', '#5A52D5']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>🌤️ Weather Assistant</Text>
+        <Text style={styles.headerSubtitle}>Real-time weather for potato farming</Text>
+      </LinearGradient>
+
+      {/* Mode Selector */}
       <View style={styles.modeSelector}>
-        <TouchableOpacity
-          style={[styles.modeButton, viewMode === "weather" && styles.modeButtonActive]}
-          onPress={() => setViewMode("weather")}
-        >
-          <Text style={[styles.modeButtonText, viewMode === "weather" && styles.modeButtonTextActive]}>
-            Current Weather
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.modeButton, viewMode === "compatible" && styles.modeButtonActive]}
-          onPress={() => setViewMode("compatible")}
-        >
-          <Text style={[styles.modeButtonText, viewMode === "compatible" && styles.modeButtonTextActive]}>
-            Disease Analysis
-          </Text>
-        </TouchableOpacity>
+        {['weather', 'compatible', 'threat'].map((mode) => (
+          <TouchableOpacity
+            key={mode}
+            style={[styles.modeButton, viewMode === mode && styles.modeButtonActive]}
+            onPress={() => setViewMode(mode)}
+          >
+            <Text style={[styles.modeButtonText, viewMode === mode && styles.modeButtonTextActive]}>
+              {mode === 'weather' ? 'Weather' : mode === 'compatible' ? 'Analysis' : 'Threat'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Leaf Type Selector (only for compatible mode) */}
-      {viewMode === "compatible" && (
-        <View style={styles.leafSelector}>
-          <Text style={styles.leafLabel}>Select Leaf Condition:</Text>
-          <View style={styles.leafButtons}>
-            {["healthy", "early blight", "late blight"].map((leaf) => (
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6C63FF"]} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Leaf Selector */}
+        {viewMode === "compatible" && (
+          <View style={styles.leafSelector}>
+            <Text style={styles.leafLabel}>🌿 Leaf Condition</Text>
+            <View style={styles.leafButtons}>
+              {["healthy", "early blight", "late blight"].map((leaf) => (
+                <TouchableOpacity
+                  key={leaf}
+                  style={[styles.leafButton, selectedLeaf === leaf && styles.leafButtonActive]}
+                  onPress={() => setSelectedLeaf(leaf)}
+                >
+                  <Text style={[styles.leafButtonText, selectedLeaf === leaf && styles.leafButtonTextActive]}>
+                    {leaf === "healthy" ? "Healthy" : leaf === "early blight" ? "Early" : "Late"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Language Selector */}
+        <View style={styles.languageContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.languageLabelContainer}>
+              <Ionicons name="language-outline" size={16} color="#6C63FF" />
+              <Text style={styles.languageLabel}>Language</Text>
+            </View>
+            {["english", "hindi", "bengali", "tamil", "telugu", "marathi", "gujarati", "punjabi"].map((lang) => (
               <TouchableOpacity
-                key={leaf}
-                style={[styles.leafButton, selectedLeaf === leaf && styles.leafButtonActive]}
-                onPress={() => setSelectedLeaf(leaf)}
+                key={lang}
+                style={[styles.languageButton, targetLanguage === lang && styles.languageSelected]}
+                onPress={() => setTargetLanguage(lang)}
               >
-                <Text style={[styles.leafButtonText, selectedLeaf === leaf && styles.leafButtonTextActive]}>
-                  {leaf.toUpperCase()}
+                <Text style={[styles.languageButtonText, targetLanguage === lang && styles.languageSelectedText]}>
+                  {lang.slice(0, 3).toUpperCase()}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </View>
-      )}
 
-      {/* Language Selector */}
-      <View style={styles.languageSelectorContainer}>
-        <Text style={styles.languageLabel}>Select Language:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[
-            "bengali","bhojpuri","gujarati","hindi","kannada","maithili",
-            "malayalam","marathi","meitei","odia","punjabi","sanskrit",
-            "tamil","telugu","urdu","santali","awadhi","bodo","khasi",
-            "kokborok","marwadi","tulu",
-          ].map((lang) => (
-            <TouchableOpacity
-              key={lang}
-              style={[
-                styles.languageButton,
-                targetLanguage === lang && styles.languageButtonSelected
-              ]}
-              onPress={() => setTargetLanguage(lang)}
-            >
-              <Text style={[
-                styles.languageButtonText,
-                targetLanguage === lang && styles.languageButtonTextSelected
-              ]}>
-                {lang.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      <ScrollView style={styles.scroll}>
-        {/* Original Weather Data Card */}
+        {/* Weather Card */}
         <View style={styles.weatherCard}>
           <Text style={styles.cardTitle}>
-            {viewMode === "weather" ? "🌡️ Current Weather Information" : "🌡️ Weather & Disease Analysis"}
+            {viewMode === "weather" ? "🌡️ Current Weather" :
+             viewMode === "threat" ? "🚨 Threat Prediction" :
+             "🌡️ Disease Analysis"}
           </Text>
-          
+
           {currentData && Object.entries(currentData).map(([key, value]) => {
-            // Skip internal fields for weather mode
-            if (viewMode === "weather" && ["City", "Timestamp"].includes(key)) {
-              return null;
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              return (
+                <View key={key} style={styles.nestedContainer}>
+                  <Text style={styles.nestedTitle}>
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </Text>
+                  {renderNestedData(value)}
+                </View>
+              );
             }
-            
-            // Format the display label
+
             let displayKey = key.replace(/([A-Z])/g, ' $1').trim();
             displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
-            
-            // Special formatting for specific fields
-            if (key === "Potato Suitability") {
-              displayKey = "🥔 Potato Suitability";
-            } else if (key === "Risk Level") {
-              displayKey = "⚠️ Risk Level";
-            } else if (key === "Disease Analysis") {
-              displayKey = "🔬 Disease Analysis";
-            } else if (key === "Feels Like") {
-              displayKey = "🌡️ Feels Like";
-            } else if (key === "Dew Point") {
-              displayKey = "💧 Dew Point";
-            } else if (key === "Wind Speed") {
-              displayKey = "💨 Wind Speed";
-            }
-            
-            // Color code based on values
+
+            const specialLabels = {
+              "Potato Suitability": "🥔 Suitability",
+              "Risk Level": "⚠️ Risk",
+              "average_risk_score": "📊 Avg Risk",
+              "maximum_risk_score": "📈 Max Risk",
+              "risk_level": "⚠️ Risk",
+              "critical_period": "⏰ Critical",
+              "mode_risk_score": "📊 Mode",
+              "median_risk_score": "📊 Median",
+              "forecast_records_analyzed": "📋 Records",
+              "Disease_Threat": "🦠 Threat",
+            };
+            displayKey = specialLabels[key] || displayKey;
+
             let valueStyle = {};
-            if (key === "Potato Suitability") {
+            let isRiskField = false;
+
+            if (key === "risk_level" || key === "Risk Level") {
+              isRiskField = true;
+              if (value === "Low" || value === "Very Low") valueStyle = styles.lowRisk;
+              else if (value === "High" || value === "Critical") valueStyle = styles.highRisk;
+              else valueStyle = styles.mediumRisk;
+            } else if (key === "average_risk_score" || key === "maximum_risk_score") {
+              const numValue = parseFloat(value);
+              if (!isNaN(numValue)) {
+                if (numValue >= 70) valueStyle = styles.highRisk;
+                else if (numValue >= 50) valueStyle = styles.mediumRisk;
+                else valueStyle = styles.lowRisk;
+              }
+            } else if (key === "Potato Suitability") {
               if (value === "Suitable") valueStyle = styles.suitable;
               else if (value === "Unsuitable") valueStyle = styles.unsuitable;
-              else valueStyle = styles.moderate;
-            } else if (key === "Risk Level") {
-              if (value === "Low") valueStyle = styles.lowRisk;
-              else if (value === "High" || value === "Very High") valueStyle = styles.highRisk;
-              else valueStyle = styles.mediumRisk;
             }
-            
+
             return (
-              <View key={key} style={styles.fieldCard}>
-                <Text style={styles.label}>{displayKey}</Text>
-                <Text style={[styles.value, valueStyle]}>{value}</Text>
-              </View>
+              <TouchableOpacity
+                key={key}
+                style={[styles.fieldCard, isRiskField && styles.riskFieldCard]}
+                onPress={() => {
+                  if (isRiskField && value) {
+                    setRiskLevel(value);
+                    setRiskModalVisible(true);
+                  }
+                }}
+              >
+                <Text style={styles.fieldLabel}>{displayKey}</Text>
+                <Text style={[styles.fieldValue, valueStyle]}>{String(value)}</Text>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Translated Data Card */}
+        {/* Translated Card */}
         {translatedWeather && Object.keys(translatedWeather).length > 0 && (
           <View style={[styles.weatherCard, styles.translatedCard]}>
-            <Text style={styles.cardTitle}>🌐 Translated ({targetLanguage.toUpperCase()})</Text>
+            <Text style={[styles.cardTitle, { color: '#0d47a1' }]}>
+              🌐 Translated ({targetLanguage.toUpperCase()})
+            </Text>
             {Object.entries(translatedWeather).map(([key, value]) => {
-              // Skip internal fields
-              if (viewMode === "weather" && ["City", "Timestamp"].includes(key)) {
-                return null;
+              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                return (
+                  <View key={key} style={styles.nestedContainer}>
+                    <Text style={styles.nestedTitle}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
+                    {renderNestedData(value)}
+                  </View>
+                );
               }
-              
               let displayKey = key.replace(/([A-Z])/g, ' $1').trim();
               displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
-              
               return (
                 <View key={key} style={styles.fieldCard}>
-                  <Text style={styles.label}>{displayKey}</Text>
-                  <Text style={styles.value}>{value}</Text>
+                  <Text style={styles.fieldLabel}>{displayKey}</Text>
+                  <Text style={styles.fieldValue}>{String(value)}</Text>
                 </View>
               );
             })}
           </View>
         )}
 
-        {/* Location Info */}
+        {/* Info Card */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            📍 Location: {currentData?.City || "Auto-detected"}
-          </Text>
-          {currentData?.Timestamp && (
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color="#6C63FF" />
             <Text style={styles.infoText}>
-              🕐 Last Updated: {currentData.Timestamp}
+              {currentData?.City || "Auto-detected"}
             </Text>
+          </View>
+          {currentData?.Timestamp && (
+            <View style={styles.infoRow}>
+              <Ionicons name="time-outline" size={16} color="#6C63FF" />
+              <Text style={styles.infoText}>{currentData.Timestamp}</Text>
+            </View>
           )}
-          <Text style={styles.infoText}>
-            🎯 Location Source: {locationSource || "Auto-detected by server"}
-          </Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="navigate-outline" size={16} color="#6C63FF" />
+            <Text style={styles.infoText}>Source: {locationSource || "Auto-detected"}</Text>
+          </View>
         </View>
+
+        {/* Bottom Spacer */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
   );
 }
 
-// 🌿 Styles
+const getRiskIndicatorStyle = (level) => {
+  switch(level) {
+    case 'Critical': return styles.riskCritical;
+    case 'High': return styles.riskHigh;
+    case 'Moderate': return styles.riskModerate;
+    case 'Low': return styles.riskLow;
+    case 'Very Low': return styles.riskVeryLow;
+    default: return {};
+  }
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#eafaf1",
-    padding: 16,
+    backgroundColor: '#F5F7FA',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    textAlign: "center",
-    marginBottom: 16,
+  // Header
+  headerGradient: {
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6C63FF',
+    fontWeight: '600',
+  },
+  // Empty
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+    padding: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  retryGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Mode Selector
   modeSelector: {
-    flexDirection: "row",
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: -15,
     marginBottom: 16,
-    borderRadius: 10,
-    backgroundColor: "#c8e6c9",
+    borderRadius: 14,
+    backgroundColor: '#fff',
     padding: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   modeButton: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
+    borderRadius: 10,
+    alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: '#6C63FF',
   },
   modeButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2e7d32",
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
   },
   modeButtonTextActive: {
-    color: "#fff",
+    color: '#fff',
   },
+  // Scroll
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  // Leaf Selector
   leafSelector: {
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   leafLabel: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#388e3c",
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 8,
   },
   leafButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   leafButton: {
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: "#e8f5e9",
+    backgroundColor: '#F0F0F5',
   },
   leafButtonActive: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: '#6C63FF',
   },
   leafButtonText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#2e7d32",
+    fontWeight: '600',
+    color: '#666',
   },
   leafButtonTextActive: {
-    color: "#fff",
+    color: '#fff',
   },
-  languageSelectorContainer: {
-    marginBottom: 16,
+  // Language
+  languageContainer: {
+    marginBottom: 12,
+  },
+  languageLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+    backgroundColor: '#F0F0F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   languageLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#388e3c",
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6C63FF',
+    marginLeft: 4,
   },
   languageButton: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 6,
+    paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: "#c8e6c9",
+    backgroundColor: '#F0F0F5',
+    marginRight: 6,
   },
-  languageButtonSelected: {
-    backgroundColor: "#388e3c",
+  languageSelected: {
+    backgroundColor: '#6C63FF',
   },
   languageButtonText: {
-    color: "#2e7d32",
-    fontWeight: "600",
-    fontSize: 11,
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#666',
   },
-  languageButtonTextSelected: {
-    color: "#fff",
+  languageSelectedText: {
+    color: '#fff',
   },
-  scroll: {
-    marginTop: 10,
-  },
+  // Weather Card
   weatherCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   translatedCard: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: '#F0F4FF',
+    borderWidth: 1,
+    borderColor: '#6C63FF',
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textAlign: "center",
-    marginBottom: 16,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1A1A2E',
+    marginBottom: 12,
+    textAlign: 'center',
   },
   fieldCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f0fff4",
-    padding: 10,
-    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F5',
+  },
+  riskFieldCard: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFB300',
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#555',
+    flex: 1,
+  },
+  fieldValue: {
+    fontSize: 13,
+    color: '#1A1A2E',
+    fontWeight: '500',
+    textAlign: 'right',
+    flex: 1,
+  },
+  nestedContainer: {
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
+    padding: 8,
+    backgroundColor: '#F5F7FA',
+    borderRadius: 8,
   },
-  label: {
+  nestedTitle: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#388E3C",
-    flex: 1,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
   },
-  value: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-    flex: 1,
-    textAlign: "right",
+  nestedLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+    marginTop: 2,
   },
   suitable: {
-    color: "#4CAF50",
-    fontWeight: "bold",
+    color: '#4CAF50',
+    fontWeight: 'bold',
   },
   unsuitable: {
-    color: "#f44336",
-    fontWeight: "bold",
-  },
-  moderate: {
-    color: "#FF9800",
-    fontWeight: "bold",
+    color: '#f44336',
+    fontWeight: 'bold',
   },
   lowRisk: {
-    color: "#4CAF50",
-    fontWeight: "bold",
+    color: '#4CAF50',
+    fontWeight: 'bold',
   },
   highRisk: {
-    color: "#f44336",
-    fontWeight: "bold",
+    color: '#f44336',
+    fontWeight: 'bold',
   },
   mediumRisk: {
-    color: "#FF9800",
-    fontWeight: "bold",
+    color: '#FF9800',
+    fontWeight: 'bold',
   },
+  // Info Card
   infoCard: {
-    backgroundColor: "#fff3e0",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
   },
   infoText: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-    textAlign: "center",
+    fontSize: 13,
+    color: '#666',
   },
-  loadingContainer: {
+  bottomSpacer: {
+    height: 20,
+  },
+  // Modal
+  modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#eafaf1",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  loadingText: {
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  modalDivider: {
+    width: '100%',
+    height: 2,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 12,
+  },
+  modalDescription: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#388E3C",
-    marginTop: 10,
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 16,
+    lineHeight: 24,
   },
-  noDataText: {
-    fontSize: 18,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 50,
+  riskIndicators: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginVertical: 12,
+    width: '100%',
   },
-  retryButton: {
-    backgroundColor: "#4CAF50",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    alignSelf: "center",
+  riskIndicator: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    margin: 3,
+    opacity: 0.5,
   },
-  retryButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  riskActive: {
+    opacity: 1,
+    transform: [{ scale: 1.1 }],
+  },
+  riskIndicatorText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  riskCritical: {
+    backgroundColor: '#d32f2f',
+  },
+  riskHigh: {
+    backgroundColor: '#f44336',
+  },
+  riskModerate: {
+    backgroundColor: '#FF9800',
+  },
+  riskLow: {
+    backgroundColor: '#4CAF50',
+  },
+  riskVeryLow: {
+    backgroundColor: '#2E7D32',
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 25,
+    marginTop: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
